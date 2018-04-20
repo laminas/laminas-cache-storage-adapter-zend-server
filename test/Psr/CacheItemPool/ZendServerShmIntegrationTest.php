@@ -1,19 +1,19 @@
 <?php
 /**
  * @see       https://github.com/zendframework/zend-cache for the canonical source repository
- * @copyright Copyright (c) 2018 Zend Technologies USA Inc. (https://www.zend.com)
+ * @copyright Copyright (c) 2018 Zend Technologies USA Inc. (http://www.zend.com)
  * @license   https://github.com/zendframework/zend-cache/blob/master/LICENSE.md New BSD License
  */
 
-namespace ZendTest\Cache\Psr\SimpleCache;
+namespace ZendTest\Cache\Psr\CacheItemPool;
 
-use Cache\IntegrationTests\SimpleCacheTest;
-use Zend\Cache\Psr\SimpleCache\SimpleCacheDecorator;
+use Cache\IntegrationTests\CachePoolTest;
+use Zend\Cache\Psr\CacheItemPool\CacheItemPoolAdapter;
 use Zend\Cache\StorageFactory;
 use Zend\Cache\Exception;
 use Zend\ServiceManager\Exception\ServiceNotCreatedException;
 
-class ZendServerDiskIntegrationTest extends SimpleCacheTest
+class ZendServerShmIntegrationTest extends CachePoolTest
 {
     /**
      * Backup default timezone
@@ -27,6 +27,10 @@ class ZendServerDiskIntegrationTest extends SimpleCacheTest
             $this->markTestSkipped('Enable TESTS_ZEND_CACHE_ZEND_SERVER_ENABLED to run this test');
         }
 
+        if (! function_exists('zend_shm_cache_store') || PHP_SAPI == 'cli') {
+            $this->markTestSkipped("Missing 'zend_shm_cache_*' functions or running from SAPI 'cli'");
+        }
+
         // set non-UTC timezone
         $this->tz = date_default_timezone_get();
         date_default_timezone_set('America/Vancouver');
@@ -38,18 +42,25 @@ class ZendServerDiskIntegrationTest extends SimpleCacheTest
     {
         date_default_timezone_set($this->tz);
 
-        if (function_exists('zend_disk_cache_clear')) {
+        if (function_exists('zend_shm_cache_clear')) {
             zend_disk_cache_clear();
         }
 
         parent::tearDown();
     }
 
-    public function createSimpleCache()
+    public function createCachePool()
     {
         try {
-            $storage = StorageFactory::adapterFactory('zendserverdisk');
-            return new SimpleCacheDecorator($storage);
+            $storage = StorageFactory::adapterFactory('zendservershm');
+
+            $deferredSkippedMessage = sprintf(
+                '%s storage doesn\'t support driver deferred',
+                \get_class($storage)
+            );
+            $this->skippedTests['testHasItemReturnsFalseWhenDeferredItemIsExpired'] = $deferredSkippedMessage;
+
+            return new CacheItemPoolAdapter($storage);
         } catch (Exception\ExtensionNotLoadedException $e) {
             $this->markTestSkipped($e->getMessage());
         } catch (ServiceNotCreatedException $e) {
