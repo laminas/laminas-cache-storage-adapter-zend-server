@@ -19,10 +19,6 @@ class ZendServerDiskTest extends CommonAdapterTest
 {
     public function setUp()
     {
-        if (getenv('TESTS_LAMINAS_CACHE_ZEND_SERVER_ENABLED') != 'true') {
-            $this->markTestSkipped('Enable TESTS_LAMINAS_CACHE_ZEND_SERVER_ENABLED to run this test');
-        }
-
         if (! function_exists('zend_disk_cache_store') || PHP_SAPI == 'cli') {
             try {
                 new Cache\Storage\Adapter\ZendServerDisk();

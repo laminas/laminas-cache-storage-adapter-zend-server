@@ -24,10 +24,6 @@ class ZendServerShmIntegrationTest extends SimpleCacheTest
 
     protected function setUp()
     {
-        if (! getenv('TESTS_LAMINAS_CACHE_ZEND_SERVER_ENABLED')) {
-            $this->markTestSkipped('Enable TESTS_LAMINAS_CACHE_ZEND_SERVER_ENABLED to run this test');
-        }
-
         if (! function_exists('zend_shm_cache_store') || PHP_SAPI == 'cli') {
             $this->markTestSkipped("Missing 'zend_shm_cache_*' functions or running from SAPI 'cli'");
         }
